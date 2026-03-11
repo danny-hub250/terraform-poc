@@ -1,0 +1,23 @@
+# Terraform
+.terraform/
+*.tfstate
+*.tfstate.*
+.terraform.lock.hcl
+
+# Terraform plan
+*.tfplan
+
+# CLI config
+terraform.rc
+.terraformrc
+
+# Mac
+.DS_Store
+
+# IDE
+.vscode/
+.idea/
+
+# logs
+crash.log
+crash.*.log
