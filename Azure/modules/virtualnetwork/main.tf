@@ -1,4 +1,4 @@
-resource "azurerm_virtual_network" "vnet" {
+resource "azurerm_virtual_network" "virtualnetwork" {
 
   name                = var.name
   location            = var.location
