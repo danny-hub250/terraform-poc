@@ -8,7 +8,7 @@ resource "azurerm_kubernetes_cluster" "aks" {
   kubernetes_version  = var.kubernetes_version
 
   node_resource_group = var.node_resource_group
-
+  private_cluster_enabled = var.private_cluster_enabled
   default_node_pool {
 
     name                = var.system_node_pool.name
@@ -34,7 +34,7 @@ resource "azurerm_kubernetes_cluster" "aks" {
     network_plugin_mode = "overlay"
     load_balancer_sku = "standard"
 
-    outbound_type = "loadBalancer"
+    outbound_type = var.outbound_type
 
   }
 
@@ -54,6 +54,24 @@ resource "azurerm_kubernetes_cluster" "aks" {
     }
 
   }
+
+  tags = var.tags
+}
+
+resource "azurerm_kubernetes_cluster_node_pool" "userpool" {
+
+  name                  = var.user_node_pool.name
+  kubernetes_cluster_id = azurerm_kubernetes_cluster.aks.id
+
+  vm_size               = var.user_node_pool.vm_size
+  node_count            = var.user_node_pool.node_count
+
+  vnet_subnet_id        = var.subnet_id
+
+  min_count             = var.user_node_pool.min_count
+  max_count             = var.user_node_pool.max_count
+
+  mode                  = "User"
 
   tags = var.tags
 }

@@ -26,3 +26,8 @@ variable "security_rules" {
     destination_address_prefix = string
   }))
 }
+
+variable "tags" {
+  type = map(string)
+  default = {}
+}

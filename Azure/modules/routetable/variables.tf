@@ -21,3 +21,7 @@ variable "routes" {
     next_hop_ip    = optional(string)
   }))
 }
+variable "tags" {
+  type = map(string)
+  default = {}
+}
