@@ -6,6 +6,11 @@
 
 # Terraform plan
 *.tfplan
+tfplan
+
+# Sensitive variable files
+*.auto.tfvars
+secrets*.tfvars
 
 # CLI config
 terraform.rc
