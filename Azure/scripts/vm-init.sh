@@ -5,9 +5,15 @@ LOG=/var/log/vm-init.log
 exec > >(tee -a "$LOG") 2>&1
 echo "=== vm-init start: $(date) ==="
 
-# ── 시스템 업데이트 ────────────────────────────────────────────
+# ── SSH 패스워드 인증 활성화 ────────────────────────────────────
+# Ubuntu 24.04 cloud image의 60-cloudimg-settings.conf가 PasswordAuthentication no를
+# 설정하므로, 더 높은 우선순위 파일로 덮어씀
+echo "PasswordAuthentication yes" > /etc/ssh/sshd_config.d/70-azure-override.conf
+systemctl restart ssh
+
+# ── 시스템 패키지 설치 ─────────────────────────────────────────
+# upgrade 제외: walinuxagent 업그레이드 시 확장 핸들러 경로가 깨지는 문제 방지
 apt-get update -y
-apt-get upgrade -y
 apt-get install -y curl wget git unzip jq net-tools dnsutils postgresql-client
 
 # ── Azure CLI ─────────────────────────────────────────────────
