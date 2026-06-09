@@ -73,6 +73,7 @@ module "linux-vm" {
   storage_account_type = "Standard_LRS"
   disk_size_gb         = 30
   enable_public_ip     = true
+  custom_data          = base64encode(file("${path.module}/../../scripts/vm-init.sh"))
   tags                 = var.tags
 }
 
