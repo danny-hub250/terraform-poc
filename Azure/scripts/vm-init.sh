@@ -44,4 +44,8 @@ mv bin/linux_amd64/kubelogin /usr/local/bin/kubelogin
 rm -rf bin kubelogin-linux-amd64.zip
 kubelogin --version
 
+# ── kubectl alias ─────────────────────────────────────────────
+echo "alias k=kubectl" >> /home/azureuser/.bashrc
+echo "alias k=kubectl" >> /root/.bashrc
+
 echo "=== vm-init complete: $(date) ==="
