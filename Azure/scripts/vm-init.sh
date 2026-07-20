@@ -44,6 +44,15 @@ mv bin/linux_amd64/kubelogin /usr/local/bin/kubelogin
 rm -rf bin kubelogin-linux-amd64.zip
 kubelogin --version
 
+# ── k9s ───────────────────────────────────────────────────────
+echo ">>> Installing k9s..."
+K9S_VERSION=$(curl -sSL https://api.github.com/repos/derailed/k9s/releases/latest \
+  | jq -r '.tag_name')
+curl -sSLO "https://github.com/derailed/k9s/releases/download/${K9S_VERSION}/k9s_linux_amd64.deb"
+apt-get install -y ./k9s_linux_amd64.deb
+rm -f k9s_linux_amd64.deb
+k9s version
+
 # ── kubectl alias ─────────────────────────────────────────────
 echo "alias k=kubectl" >> /home/azureuser/.bashrc
 echo "alias k=kubectl" >> /root/.bashrc
