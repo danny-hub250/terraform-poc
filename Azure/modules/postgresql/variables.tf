@@ -24,6 +24,16 @@ variable "administrator_password" {
   description = "관리자 계정 비밀번호"
 }
 
+variable "delegated_subnet_id" {
+  type        = string
+  description = "Microsoft.DBforPostgreSQL/flexibleServers로 위임된 서브넷 ID (VNet 통합)"
+}
+
+variable "private_dns_zone_id" {
+  type        = string
+  description = "Private DNS Zone ID (이름이 *.postgres.database.azure.com 으로 끝나야 함)"
+}
+
 variable "sku_name" {
   type        = string
   default     = "B_Standard_B1ms"
@@ -40,6 +50,12 @@ variable "pg_version" {
   type        = string
   default     = "16"
   description = "PostgreSQL 버전"
+}
+
+variable "zone" {
+  type        = string
+  default     = null
+  description = "가용성 영역. Azure가 생성 시 자동 할당한 값과 다르게 지정하면 재생성이 발생할 수 있으므로, 기존 서버는 실제 할당된 zone 값으로 고정 권장"
 }
 
 variable "backup_retention_days" {

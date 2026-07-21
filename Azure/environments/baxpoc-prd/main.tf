@@ -229,6 +229,7 @@ module "postgresql" {
   sku_name               = "GP_Standard_D2ds_v5"
   storage_mb             = 131072
   pg_version             = "18"
+  zone                   = "2"
   delegated_subnet_id    = module.subnet_db.id
   private_dns_zone_id    = module.postgresql_dns.id
   tags                   = var.tags
