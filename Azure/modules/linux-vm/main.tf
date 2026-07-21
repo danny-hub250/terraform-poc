@@ -79,3 +79,26 @@ resource "azurerm_linux_virtual_machine" "linux_vm" {
 
   tags = var.tags
 }
+
+# 데이터 디스크 (선택)
+resource "azurerm_managed_disk" "data_disk" {
+  count = var.data_disk_size_gb != null ? 1 : 0
+
+  name                 = "${var.name}-datadisk01"
+  location             = var.location
+  resource_group_name  = var.resource_group_name
+  storage_account_type = var.storage_account_type
+  create_option        = "Empty"
+  disk_size_gb         = var.data_disk_size_gb
+
+  tags = var.tags
+}
+
+resource "azurerm_virtual_machine_data_disk_attachment" "data_disk" {
+  count = var.data_disk_size_gb != null ? 1 : 0
+
+  managed_disk_id    = azurerm_managed_disk.data_disk[0].id
+  virtual_machine_id = azurerm_linux_virtual_machine.linux_vm.id
+  lun                = "10"
+  caching            = "ReadWrite"
+}

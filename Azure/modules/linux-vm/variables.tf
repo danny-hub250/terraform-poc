@@ -42,6 +42,12 @@ variable "enable_public_ip" {
   default     = false
 }
 
+variable "data_disk_size_gb" {
+  description = "추가 데이터 디스크 크기(GB). null이면 데이터 디스크를 생성하지 않음"
+  type        = number
+  default     = null
+}
+
 variable "custom_data" {
   description = "base64로 인코딩된 cloud-init 스크립트. null이면 실행 안 함."
   type        = string

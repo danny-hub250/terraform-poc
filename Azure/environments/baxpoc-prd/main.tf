@@ -1,20 +1,20 @@
 module "app-rg" {
   source = "../../modules/resourcegroup"
-  name                = "bax-poc-prd-app-rg"
+  name                = "bax-rnd-prd-app-rg"
   location            = var.location
   tags                = var.tags
 }
 
 module "network-rg" {
   source = "../../modules/resourcegroup"
-  name                = "bax-poc-prd-network-rg"
+  name                = "bax-rnd-prd-network-rg"
   location            = var.location
   tags                = var.tags
 }
 
 module "ai-rg" {
   source = "../../modules/resourcegroup"
-  name                = "bax-poc-prd-ai-rg"
+  name                = "bax-rnd-prd-ai-rg"
   location            = var.location
   tags                = var.tags
 }
@@ -22,7 +22,7 @@ module "ai-rg" {
 
 module "vnet" {
   source = "../../modules/virtualnetwork"
-  name                = "bax-poc-prd-vnet"
+  name                = "bax-rnd-prd-vnet"
   location            = var.location
   resource_group_name = module.network-rg.name
   address_space       = ["10.140.0.0/24"]
@@ -31,7 +31,7 @@ module "vnet" {
 
 module "subnet_mgmt" {
   source = "../../modules/subnet"
-  name                = "bax-poc-prd-mgmt-snet"
+  name                = "bax-rnd-prd-mgmt-snet"
   resource_group_name = module.network-rg.name
   vnet_name           = module.vnet.name
   address_prefixes    = ["10.140.0.0/27"]
@@ -39,7 +39,7 @@ module "subnet_mgmt" {
 
 module "subnet_private_endpoint" {
   source = "../../modules/subnet"
-  name                = "bax-poc-prd-pe-snet"
+  name                = "bax-rnd-prd-pe-snet"
   resource_group_name = module.network-rg.name
   vnet_name           = module.vnet.name
   address_prefixes    = ["10.140.0.32/27"]
@@ -47,15 +47,18 @@ module "subnet_private_endpoint" {
 
 module "subnet_db" {
   source = "../../modules/subnet"
-  name                = "bax-poc-prd-db-snet"
+  name                = "bax-rnd-prd-db-snet"
   resource_group_name = module.network-rg.name
   vnet_name           = module.vnet.name
   address_prefixes    = ["10.140.0.64/27"]
+
+  delegation_name         = "fs"
+  service_delegation_name = "Microsoft.DBforPostgreSQL/flexibleServers"
 }
 
 module "subnet_aks" {
   source = "../../modules/subnet"
-  name                = "bax-poc-prd-aks-snet"
+  name                = "bax-rnd-prd-aks-snet"
   resource_group_name = module.network-rg.name
   vnet_name           = module.vnet.name
   address_prefixes    = ["10.140.0.128/25"]
@@ -63,7 +66,7 @@ module "subnet_aks" {
 
 module "linux-vm" {
   source = "../../modules/linux-vm"
-  name                 = "bax-poc-p-vm"
+  name                 = "bax-rnd-p-vm"
   resource_group_name  = module.app-rg.name
   location             = var.location
   subnet_id            = module.subnet_mgmt.id
@@ -72,6 +75,7 @@ module "linux-vm" {
   admin_password       = var.vm_admin_password
   storage_account_type = "Standard_LRS"
   disk_size_gb         = 30
+  data_disk_size_gb    = 128
   enable_public_ip     = true
   tags                 = var.tags
 }
@@ -79,7 +83,7 @@ module "linux-vm" {
 module "kubernetes" {
   source = "../../modules/kubernetes"
 
-  cluster_name = "bax-poc-prd-aks"
+  cluster_name = "bax-rnd-prd-aks"
 
   system_node_pool = {
     name       = "sysnp01"
@@ -109,7 +113,7 @@ module "containerregistry" {
   source = "../../modules/containerregistry"
 
   location            = var.location
-  name                = "baxpocprdacr"
+  name                = "baxrndprdacr"
   resource_group_name = module.app-rg.name
   sku                 = "Standard"
   admin_enabled       = true
@@ -168,7 +172,7 @@ module "serviceai_dns_link" {
 module "foundry" {
   source = "../../modules/foundry"
 
-  name                = "bax-poc-prd-msf"
+  name                = "bax-rnd-prd-msf"
   location            = "EastUS2"
   resource_group_name = module.ai-rg.name
   tags = var.tags
@@ -193,21 +197,7 @@ module "foundry_pe" {
   tags = var.tags
 }
 
-# PostgreSQL Flexible Server
-module "postgresql" {
-  source = "../../modules/postgresql"
-
-  name                   = "bax-poc-prd-psql"
-  location               = var.location
-  resource_group_name    = module.app-rg.name
-  administrator_login    = "psqladmin"
-  administrator_password = var.db_admin_password
-  sku_name               = "B_Standard_B1ms"
-  storage_mb             = 32768
-  pg_version             = "18"
-  tags                   = var.tags
-}
-
+# PostgreSQL Flexible Server - Private DNS Zone (VNet 통합용)
 module "postgresql_dns" {
   source = "../../modules/privatednszone"
 
@@ -223,20 +213,25 @@ module "postgresql_dns_link" {
   resource_group_name = module.network-rg.name
   dns_zone_name       = module.postgresql_dns.name
   vnet_id             = module.vnet.id
+
+  depends_on = [module.subnet_db]
 }
 
-module "postgresql_pe" {
-  source = "../../modules/privateendpoint"
+# PostgreSQL Flexible Server - VNet 통합 (delegated subnet, Private Endpoint 미지원)
+module "postgresql" {
+  source = "../../modules/postgresql"
 
-  name                = "${module.postgresql.name}-pe"
-  location            = var.location
-  resource_group_name = module.app-rg.name
-  subnet_id           = module.subnet_db.id
-  resource_id         = module.postgresql.id
-  subresource_names   = ["postgresqlServer"]
+  name                   = "bax-rnd-prd-psql"
+  location               = var.location
+  resource_group_name    = module.app-rg.name
+  administrator_login    = "psqladmin"
+  administrator_password = var.db_admin_password
+  sku_name               = "GP_Standard_D2ds_v5"
+  storage_mb             = 131072
+  pg_version             = "18"
+  delegated_subnet_id    = module.subnet_db.id
+  private_dns_zone_id    = module.postgresql_dns.id
+  tags                   = var.tags
 
-  private_dns_zone_ids = [
-    module.postgresql_dns.id
-  ]
-  tags = var.tags
+  depends_on = [module.postgresql_dns_link]
 }

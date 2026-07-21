@@ -2,8 +2,8 @@ location = "koreacentral"
 
 tags = {
 
-  project = "bax-poc"
-  env     = "prd"
+  project = "bax-rnd"
+  env     = "rnd-prd"
   owner   = "skbaxpoc"
 
 }
