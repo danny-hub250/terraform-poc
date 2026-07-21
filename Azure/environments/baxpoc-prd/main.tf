@@ -70,7 +70,7 @@ module "linux-vm" {
   resource_group_name  = module.app-rg.name
   location             = var.location
   subnet_id            = module.subnet_mgmt.id
-  size                 = "Standard_D4s_v5"
+  size                 = "Standard_D2s_v5"
   admin_username       = "azureuser"
   admin_password       = var.vm_admin_password
   storage_account_type = "Standard_LRS"
