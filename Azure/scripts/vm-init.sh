@@ -53,6 +53,12 @@ echo ">>> Installing Azure CLI..."
 curl -sL https://aka.ms/InstallAzureCLIDeb | bash
 az version
 
+# ── Docker ────────────────────────────────────────────────────
+echo ">>> Installing Docker..."
+curl -fsSL https://get.docker.com | sh
+usermod -aG docker azureuser
+docker version
+
 # ── kubectl ───────────────────────────────────────────────────
 echo ">>> Installing kubectl..."
 KUBECTL_VERSION=$(curl -sSL https://dl.k8s.io/release/stable.txt)

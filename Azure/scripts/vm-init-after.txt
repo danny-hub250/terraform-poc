@@ -1,0 +1,63 @@
+vm-init.sh 실행(kubectl, helm 설치) 이후 추가로 해야 할 작업
+=================================================================
+
+ACR 이름은 baxrndprdacr 입니다.
+
+1. Azure 로그인 (아직 안 했다면)
+-----------------------------------------------------------------
+az login
+az account set --subscription "<subscription-id>"
+
+2. AKS kubeconfig 연결 (이미 했으면 스킵)
+-----------------------------------------------------------------
+az aks get-credentials --resource-group bax-rnd-prd-app-rg --name bax-rnd-prd-aks --overwrite-existing
+kubectl get nodes
+
+3. AKS <-> ACR 연동 (필수, 아직 안 함)
+-----------------------------------------------------------------
+이거 없으면 baxrndprdacr에서 이미지 pull 시 403 에러 납니다.
+
+az aks update -n bax-rnd-prd-aks -g bax-rnd-prd-app-rg --attach-acr baxrndprdacr
+
+4. (이미지를 직접 build/push 할 경우) ACR 로그인
+-----------------------------------------------------------------
+az acr login --name baxrndprdacr
+
+az acr build를 쓸 거면 이 로그인은 불필요함 (서버사이드 빌드라 az login만 되어 있으면 됨).
+
+[에러] az acr login 실행 시 DOCKER_COMMAND_ERROR / "Please verify if Docker
+client is installed and running." 가 뜨는 경우
+-----------------------------------------------------------------
+원인: az acr login은 내부적으로 Docker 클라이언트를 호출해서 docker login을
+수행하는 명령인데, jumpbox에 Docker가 설치되어 있지 않아서 발생.
+
+[업데이트] vm-init.sh에 Docker 설치 단계를 추가함 (get.docker.com 스크립트로
+설치 + azureuser를 docker 그룹에 추가). vm-init.sh를 재실행하면 해결됨.
+단, 그룹 권한은 재접속해야 적용되므로 vm-init.sh 실행 후 SSH 재접속 필요.
+
+  sudo ./vm-init.sh
+  exit
+  ssh azureuser@<jumpbox-ip>   # 재접속 (docker 그룹 권한 적용)
+
+  az acr login --name baxrndprdacr
+  docker build -t baxrndprdacr.azurecr.io/myapp:v1 .
+  docker push baxrndprdacr.azurecr.io/myapp:v1
+
+로컬 Docker 빌드가 필요 없는 경우에는 여전히 az acr build로 대체 가능:
+  az acr build --registry baxrndprdacr --image myapp:v1 .
+  (az login만 되어 있으면 됨, 로컬 Docker/az acr login 둘 다 불필요)
+
+---
+이후는 선택 사항
+
+5. (선택) Ingress 컨트롤러 - 외부에서 앱 접근 필요할 때
+-----------------------------------------------------------------
+helm repo add ingress-nginx https://kubernetes.github.io/ingress-nginx
+helm install ingress-nginx ingress-nginx/ingress-nginx -n ingress-nginx --create-namespace
+
+6. (선택) 모니터링(Container Insights)
+-----------------------------------------------------------------
+az aks enable-addons -a monitoring -n bax-rnd-prd-aks -g bax-rnd-prd-app-rg
+
+=================================================================
+지금 단계에서 필수인 건 1~3.
