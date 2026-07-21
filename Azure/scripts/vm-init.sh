@@ -5,6 +5,38 @@ LOG=/var/log/vm-init.log
 exec > >(tee -a "$LOG") 2>&1
 echo "=== vm-init start: $(date) ==="
 
+# ── 데이터 디스크 마운트 ─────────────────────────────────────────
+# Terraform에서 LUN 10으로 붙인 데이터 디스크(있는 경우)를 /data에 마운트.
+# blkid/mkfs.ext4/mount 등은 Ubuntu 기본 이미지에 이미 포함되어 있어
+# apt-get install보다 먼저 실행 가능. 디스크가 없는 환경(LUN 10 미부착)에서는 건너뜀.
+# 이미 포맷/마운트되어 있으면 재실행해도 데이터를 건드리지 않음(idempotent).
+DATA_DISK_LINK="/dev/disk/azure/scsi1/lun10"
+MOUNT_POINT="/data"
+
+if [ -L "$DATA_DISK_LINK" ]; then
+  DATA_DISK=$(readlink -f "$DATA_DISK_LINK")
+  DATA_PART="${DATA_DISK}1"
+
+  if ! blkid "$DATA_PART" >/dev/null 2>&1; then
+    echo ">>> Partitioning and formatting data disk ${DATA_DISK}..."
+    echo ';' | sfdisk "$DATA_DISK"
+    udevadm settle
+    mkfs.ext4 -F "$DATA_PART"
+  else
+    echo ">>> ${DATA_PART} already has a filesystem, skipping format"
+  fi
+
+  mkdir -p "$MOUNT_POINT"
+
+  grep -q "^${DATA_PART}[[:space:]]" /etc/fstab || \
+    echo "${DATA_PART} ${MOUNT_POINT} ext4 defaults,nofail 0 2" >> /etc/fstab
+
+  mountpoint -q "$MOUNT_POINT" || mount "$MOUNT_POINT"
+  echo ">>> Data disk mounted at ${MOUNT_POINT}"
+else
+  echo ">>> No data disk (LUN 10) detected, skipping disk mount step"
+fi
+
 # ── SSH 패스워드 인증 활성화 ────────────────────────────────────
 # Ubuntu 24.04 cloud image의 60-cloudimg-settings.conf가 PasswordAuthentication no를
 # 설정하므로, 더 높은 우선순위 파일로 덮어씀
