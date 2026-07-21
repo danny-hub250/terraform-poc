@@ -51,6 +51,9 @@ module "subnet_db" {
   resource_group_name = module.network-rg.name
   vnet_name           = module.vnet.name
   address_prefixes    = ["10.130.0.64/27"]
+
+  delegation_name         = "fs"
+  service_delegation_name = "Microsoft.DBforPostgreSQL/flexibleServers"
 }
 
 module "subnet_aks" {
@@ -72,6 +75,7 @@ module "linux-vm" {
   admin_password       = var.vm_admin_password
   storage_account_type = "Standard_LRS"
   disk_size_gb         = 30
+  data_disk_size_gb    = 128
   enable_public_ip     = true
   tags                 = var.tags
 }
@@ -193,21 +197,7 @@ module "foundry_pe" {
   tags = var.tags
 }
 
-# PostgreSQL Flexible Server
-module "postgresql" {
-  source = "../../modules/postgresql"
-
-  name                   = "bax-poc-dev-psql"
-  location               = var.location
-  resource_group_name    = module.app-rg.name
-  administrator_login    = "psqladmin"
-  administrator_password = var.db_admin_password
-  sku_name               = "B_Standard_B1ms"
-  storage_mb             = 32768
-  pg_version             = "18"
-  tags                   = var.tags
-}
-
+# PostgreSQL Flexible Server - Private DNS Zone (VNet 통합용)
 module "postgresql_dns" {
   source = "../../modules/privatednszone"
 
@@ -223,20 +213,25 @@ module "postgresql_dns_link" {
   resource_group_name = module.network-rg.name
   dns_zone_name       = module.postgresql_dns.name
   vnet_id             = module.vnet.id
+
+  depends_on = [module.subnet_db]
 }
 
-module "postgresql_pe" {
-  source = "../../modules/privateendpoint"
+# PostgreSQL Flexible Server - VNet 통합 (delegated subnet, Private Endpoint 미지원)
+module "postgresql" {
+  source = "../../modules/postgresql"
 
-  name                = "${module.postgresql.name}-pe"
-  location            = var.location
-  resource_group_name = module.app-rg.name
-  subnet_id           = module.subnet_db.id
-  resource_id         = module.postgresql.id
-  subresource_names   = ["postgresqlServer"]
+  name                   = "bax-poc-dev-psql"
+  location               = var.location
+  resource_group_name    = module.app-rg.name
+  administrator_login    = "psqladmin"
+  administrator_password = var.db_admin_password
+  sku_name               = "B_Standard_B1ms"
+  storage_mb             = 32768
+  pg_version             = "18"
+  delegated_subnet_id    = module.subnet_db.id
+  private_dns_zone_id    = module.postgresql_dns.id
+  tags                   = var.tags
 
-  private_dns_zone_ids = [
-    module.postgresql_dns.id
-  ]
-  tags = var.tags
+  depends_on = [module.postgresql_dns_link]
 }
