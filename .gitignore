@@ -2,13 +2,15 @@
 .terraform/
 *.tfstate
 *.tfstate.*
-.terraform.lock.hcl
 
-# Terraform plan
+# Terraform plan (바이너리에 sensitive 값이 평문으로 포함될 수 있음)
 *.tfplan
 tfplan
+tfplan*
+*destroyplan*
 
 # Sensitive variable files
+terraform.tfvars
 *.auto.tfvars
 secrets*.tfvars
 

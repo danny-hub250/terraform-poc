@@ -71,7 +71,7 @@ module "linux-vm" {
   subnet_id            = module.subnet_mgmt.id
   size                 = "Standard_D4s_v5"
   admin_username       = "azureuser"
-  admin_password       = "Auditax12#$"
+  admin_password       = var.vm_admin_password
   storage_account_type = "Standard_LRS"
   disk_size_gb         = 30
   enable_public_ip     = true
@@ -203,7 +203,7 @@ module "postgresql" {
   location               = var.location
   resource_group_name    = module.app-rg.name
   administrator_login    = "psqladmin"
-  administrator_password = "Auditax12#$"
+  administrator_password = var.db_admin_password
   sku_name               = "B_Standard_B1ms"
   storage_mb             = 32768
   pg_version             = "18"
