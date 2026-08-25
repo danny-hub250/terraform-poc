@@ -138,12 +138,15 @@ resource "azurerm_user_assigned_identity" "github_actions" {
   tags                = var.tags
 }
 
-resource "azurerm_federated_identity_credential" "github_actions_main" {
-  name      = "github-actions-${replace(var.github_branch, "/", "-")}"
+resource "azurerm_federated_identity_credential" "github_actions" {
+  for_each  = var.github_actions_apps
+  name      = "github-actions-${each.key}-${replace(var.github_branch, "/", "-")}"
   parent_id = azurerm_user_assigned_identity.github_actions.id
 
-  issuer  = "https://token.actions.githubusercontent.com"
-  subject = "repo:${var.github_repo}:ref:refs/heads/${var.github_branch}"
+  issuer = "https://token.actions.githubusercontent.com"
+  # GitHub이 이 계정의 저장소에 대해 owner@owner_id/repo@repo_id 형식의 OIDC subject를 발급하므로
+  # (일반적인 owner/repo 형식이 아님 - AADSTS700213로 실제 확인됨) 여기에 맞춰야 함.
+  subject  = "repo:${var.github_owner}@${var.github_owner_id}/${each.key}@${each.value.repo_id}:ref:refs/heads/${var.github_branch}"
   audience = ["api://AzureADTokenExchange"]
 }
 
